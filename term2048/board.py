@@ -11,12 +11,12 @@ class Board(object):
 	GOAL = 2048
 	SIZE = 4
 
-	def __init__(self, cells=None, goal=GOAL, size=SIZE, **kws):
+	def __init__(self, goal=GOAL, size=SIZE, **kws):
 		self.__size = size
 		self.__size_range = xrange(0, self.__size)
 		self.__goal = goal
 		self.__won = False
-		self.cells = cells if cells is not None else [[0]*self.__size for _ in xrange(self.__size)]
+		self.cells = [[0]*self.__size for _ in xrange(self.__size)]
 		self.addTile()
 		self.addTile()
 
@@ -45,14 +45,14 @@ class Board(object):
 	def filled(self):
 		return len(self.getEmptyCells()) == 0
 
-	def addTile(self, value=None, choices=([2]*9+[4]), tile=None):
+	def addTile(self, value=None, choices=([2]*9+[4])):
 		if value:
 			choices = [value]
 
 		v = random.choice(choices)
 		empty = self.getEmptyCells()
 		if empty:
-			x, y = tile if tile is not None else random.choice(empty)
+			x, y = random.choice(empty)
 			self.setCell(x, y, v)
 
 	def getCell(self, x, y):
@@ -108,7 +108,24 @@ class Board(object):
 			return nl + [0] * (self.__size - len(nl))
 		return [0] * (self.__size - len(nl)) + nl
 
-	def move(self, d, tile_to_add=None):
+	def fake_move(self, d):
+		if d == Board.LEFT or d == Board.RIGHT:
+			chg, get = self.setLine, self.getLine
+		elif d == Board.UP or d == Board.DOWN:
+			chg, get = self.setCol, self.getCol
+
+		new_cells = []
+		for i in self.__size_range:
+			origin = get(i)
+			line = self.__moveLineOrCol(origin, d)
+			collapsed, pts = self.__collapseLineOrCol(line, d)
+			new = self.__moveLineOrCol(collapsed, d)
+			new_cells += new
+
+		return new_cells
+
+
+	def move(self, d):
 		if d == Board.LEFT or d == Board.RIGHT:
 			chg, get = self.setLine, self.getLine
 		elif d == Board.UP or d == Board.DOWN:
@@ -130,6 +147,6 @@ class Board(object):
 			score += pts
 
 		if moved:
-			self.addTile(tile_to_add)
+			self.addTile()
 
 		return score
