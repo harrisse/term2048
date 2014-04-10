@@ -12,9 +12,27 @@ class AI:
 		Board.LEFT,
 		Board.RIGHT,
 	]
+
+	def random(self):
+		return choice(self.__keys)
+
+	def most_empty(self):
+		boards = {key: self.board.fake_move(key) for key in self.__keys}
+		flat_boards = {key: [x for row in boards[key] for x in row] for key in self.__keys}
+		histograms = {key: Counter(flat_boards[key]) for key in self.__keys}
+		open_cells = {key: histograms[key][0] for key in self.__keys}
+
+		inv_map = {}
+		for k, v in open_cells.iteritems():
+			inv_map[v] = inv_map.get(v, [])
+			inv_map[v].append(k)
+
+		return choice(inv_map[max(inv_map.keys())])
+
 	
-	def __init__(self, iterations=1, print_interval=1, delay=0, **kws):
+	def __init__(self, iterations=1, print_interval=1, delay=0, heuristic='most_empty', **kws):
 		self.__delay = delay
+		self.heuristic = getattr(self, heuristic)
 		total_won, total_score = 0, 0
 		start_time = time()
 		for i in range(iterations):
@@ -32,19 +50,9 @@ class AI:
 				print 'average score: ' + str(total_score / (i + 1.0))
 				print 'proportion won: ' + str(total_won / (i + 1.0))
 
-
 	def getMove(self):
 		if self.__delay != 0:
 			sleep(self.__delay)
+
+		return self.heuristic()
 		
-		boards = {key: self.board.fake_move(key) for key in self.__keys}
-		flat_boards = {key: [x for row in boards[key] for x in row] for key in self.__keys}
-		histograms = {key: Counter(flat_boards[key]) for key in self.__keys}
-		open_cells = {key: histograms[key][0] for key in self.__keys}
-
-		inv_map = {}
-		for k, v in open_cells.iteritems():
-			inv_map[v] = inv_map.get(v, [])
-			inv_map[v].append(k)
-
-		return choice(inv_map[max(inv_map.keys())])
