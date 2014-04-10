@@ -8,7 +8,6 @@ from colorama import init, Fore, Style
 init(autoreset=True)
 
 from term2048.player import Player
-from term2048.ai import AI
 from term2048.board import Board
 
 class Game(object):
@@ -16,12 +15,12 @@ class Game(object):
 
 	COLORS = {
 		2:    Fore.GREEN,
-		4:    Fore.BLUE + Style.BRIGHT,
+		4:    Fore.BLUE,
 		8:    Fore.CYAN,
 		16:   Fore.RED,
 		32:   Fore.MAGENTA,
 		64:   Fore.CYAN,
-		128:  Fore.BLUE + Style.BRIGHT,
+		128:  Fore.BLUE,
 		256:  Fore.MAGENTA,
 		512:  Fore.GREEN,
 		1024: Fore.RED,
@@ -30,35 +29,17 @@ class Game(object):
 		8192: Fore.CYAN,
 	}
 
-	__color_modes = {
-		'dark': {
-			Fore.BLUE: Fore.WHITE,
-			Fore.BLUE + Style.BRIGHT: Fore.WHITE,
-		},
-		'light': {
-			Fore.YELLOW: Fore.BLACK,
-		},
-	}
-
 	SCORES_FILE = '%s/.term2048.scores' % os.path.expanduser('~')
 
-	def __init__(self, scores_file=SCORES_FILE, colors=COLORS, clear_screen=True, mode=None, azmode=False, aimode=False, **kws):
+	def __init__(self, ai=None, hidemode=False, **kws):
 		self.board = Board(**kws)
 		self.score = 0
-		self.scores_file = scores_file
-		self.clear_screen = clear_screen
-		self.movepicker = AI(self) if aimode else Player()
+		self.scores_file = self.SCORES_FILE
+		self.movepicker = ai if ai is not None else Player()
 
-		self.__colors = colors
-		self.__azmode = azmode
+		self.__hidemode = hidemode
 
 		self.loadBestScore()
-		self.adjustColors(mode)
-
-	def adjustColors(self, mode='dark'):
-		rp = Game.__color_modes.get(mode, {})
-		for k, color in self.__colors.items():
-			self.__colors[k] = rp.get(color, color)
 
 	def loadBestScore(self):
 		if self.scores_file is None or not os.path.exists(self.scores_file):
@@ -95,11 +76,9 @@ class Game(object):
 	def loop(self):
 		try:
 			while True:
-				if self.clear_screen:
+				if not self.__hidemode:
 					os.system(Game.__clear)
-				else:
-					print("\n")
-				print(self.__str__(margins={'left': 4, 'top': 4, 'bottom': 4}))
+					print(self.__str__(margins={'left': 4, 'top': 4, 'bottom': 4}))
 				if self.board.won() or not self.board.canMove():
 					break
 				m = self.readMove()
@@ -110,8 +89,10 @@ class Game(object):
 			return
 
 		self.saveBestScore()
-		print('You won!' if self.board.won() else 'Game Over')
-		return self.score
+		did_win = self.board.won()
+		if not self.__hidemode:
+			print('You won!' if did_win else 'Game Over')
+		return did_win, self.score
 
 	def getCellStr(self, x, y):
 		c = self.board.getCell(x, y)
@@ -120,15 +101,8 @@ class Game(object):
 		for i in range(1, int(math.log(self.board.goal(), 2))):
 			az[2 ** i] = chr(i + 96)
 
-		if c == 0 and self.__azmode:
-			return '.'
-		elif c == 0:
+		if c == 0:
 			return '  .'
-
-		elif self.__azmode:
-			if c not in az:
-				return '?'
-			s = az[c]
 		elif c == 1024:
 			s = ' 1k'
 		elif c == 2048:
@@ -136,7 +110,7 @@ class Game(object):
 		else:
 			s = '%3d' % c
 
-		return self.__colors.get(c, Fore.RESET) + s + Style.RESET_ALL
+		return self.COLORS.get(c, Fore.RESET) + s + Style.RESET_ALL
 
 	def boardToString(self, margins={}):
 		b = self.board

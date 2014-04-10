@@ -7,6 +7,7 @@ except NameError:
 
 class Board(object):
 	UP, DOWN, LEFT, RIGHT = 1, 2, 3, 4
+	HORIZONTAL, VERTICAL = 0, 1
 
 	GOAL = 2048
 	SIZE = 4
@@ -110,9 +111,9 @@ class Board(object):
 
 	def fake_move(self, d):
 		if d == Board.LEFT or d == Board.RIGHT:
-			chg, get = self.setLine, self.getLine
+			get, chunk = self.getLine, self.HORIZONTAL
 		elif d == Board.UP or d == Board.DOWN:
-			chg, get = self.setCol, self.getCol
+			get, chunk = self.getCol, self.VERTICAL
 
 		new_cells = []
 		for i in self.__size_range:
@@ -122,8 +123,10 @@ class Board(object):
 			new = self.__moveLineOrCol(collapsed, d)
 			new_cells += new
 
-		return new_cells
+		return self.chunk_board(new_cells, chunk)
 
+	def chunk_board(self, cells, direction):
+		return [cells[x :: self.__size] for x in range(self.__size)] if direction == self.VERTICAL else [cells[x * self.__size : (x + 1) * self.__size] for x in range(self.__size)]
 
 	def move(self, d):
 		if d == Board.LEFT or d == Board.RIGHT:
