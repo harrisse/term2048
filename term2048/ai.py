@@ -1,58 +1,65 @@
-from term2048.board import Board
+from term2048.board import UP, DOWN, LEFT, RIGHT
 from term2048.game import Game
-from time import sleep, time
-from random import randrange, choice
+
 from collections import Counter
+from msvcrt import getch, kbhit
+from random import choice
 from os import system
+from time import sleep, time
+
+
+KEYS = {72: UP, 80: DOWN, 75: LEFT, 77: RIGHT}
+DIRS = KEYS.values()
 
 class AI:
-	__keys = [
-		Board.UP,
-		Board.DOWN,
-		Board.LEFT,
-		Board.RIGHT,
-	]
+	def player(self, board):
+		while True:
+			if kbhit():
+				if ord(getch()) == 224:
+					return KEYS[ord(getch())]
 
-	def random(self):
-		return choice(self.__keys)
+	def lookahead(self, board, heuristic, depth=0):
+		scores = {direction: heuristic(self.mock_move(direction), depth - 1) for direction in DIRS}
+		return choice(get_max_score(scores))
 
-	def most_empty(self):
-		boards = {key: self.board.fake_move(key) for key in self.__keys}
-		flat_boards = {key: [x for row in boards[key] for x in row] for key in self.__keys}
-		histograms = {key: Counter(flat_boards[key]) for key in self.__keys}
-		open_cells = {key: histograms[key][0] for key in self.__keys}
+	def random(self, board):
+		return 1
 
-		inv_map = {}
-		for k, v in open_cells.iteritems():
-			inv_map[v] = inv_map.get(v, [])
-			inv_map[v].append(k)
-
-		return choice(inv_map[max(inv_map.keys())])
-
+	def most_empty(self, board, depth=1):
+		return Counter([x for row in board for x in row])[0] if depth == 0 else self.lookahead(board, self.most_empty, depth)
 	
 	def __init__(self, iterations=1, print_interval=1, delay=0, heuristic='most_empty', **kws):
-		self.__delay = delay
+		self.delay = delay
 		self.heuristic = getattr(self, heuristic)
-		total_won, total_score = 0, 0
-		start_time = time()
-		for i in range(iterations):
-			game = Game(ai=self, **kws)
+		total_won, total_score, start_time = 0, 0, time()
+
+		for i in range(1, iterations):
+			game = Game(self.get_move, **kws)
 			self.board = game.board
 			won, score = game.loop()
-			total_score = total_score + score
-			if won:
-				total_won = total_won + 1
+			total_score += score
+			total_won += won
 
 			if i % print_interval == 0:
 				system('cls')
 				print 'iterations completed: ' + str(i)
 				print 'simulations per second: ' + str(i / (time() - start_time))
-				print 'average score: ' + str(total_score / (i + 1.0))
-				print 'proportion won: ' + str(total_won / (i + 1.0))
+				print 'average score: ' + str(total_score / i)
+				print 'total won: ' + str(total_won)
+				print 'proportion won: ' + str(total_won / i)
 
-	def getMove(self):
-		if self.__delay != 0:
-			sleep(self.__delay)
+	def get_move(self):
+		if self.delay != 0:
+			sleep(self.delay)
 
-		return self.heuristic()
-		
+		return self.heuristic(self.board)
+
+	def mock_move(self, key):
+		return self.board.fake_move(key)
+
+def get_max_score(dictionary):
+	inverse_dictionary = {v: [] for v in dictionary.values()}
+	for (k, v) in dictionary.iteritems():
+		inverse_dictionary[v].append(k)
+
+	return inverse_dictionary[max(inverse_dictionary.keys())]

@@ -7,90 +7,54 @@ import math
 from colorama import init, Fore, Style
 init(autoreset=True)
 
-from term2048.player import Player
 from term2048.board import Board
 
 class Game(object):
-	__clear = 'cls' if os.name == 'nt' else 'clear'
+	__clear = 'cls'
 
 	COLORS = {
-		2:    Fore.GREEN,
-		4:    Fore.BLUE,
-		8:    Fore.CYAN,
-		16:   Fore.RED,
-		32:   Fore.MAGENTA,
-		64:   Fore.CYAN,
-		128:  Fore.BLUE,
-		256:  Fore.MAGENTA,
-		512:  Fore.GREEN,
-		1024: Fore.RED,
-		2048: Fore.YELLOW,
-		4096: Fore.RED,
-		8192: Fore.CYAN,
+		1:  Fore.GREEN,
+		2:  Fore.BLUE,
+		3:  Fore.CYAN,
+		4:  Fore.RED,
+		5:  Fore.MAGENTA,
+		6:  Fore.CYAN,
+		7:  Fore.BLUE,
+		8:  Fore.MAGENTA,
+		9:  Fore.GREEN,
+		10: Fore.RED,
+		11: Fore.YELLOW,
+		12: Fore.RED,
+		13: Fore.CYAN,
 	}
 
-	SCORES_FILE = '%s/.term2048.scores' % os.path.expanduser('~')
-
-	def __init__(self, ai=None, hidemode=False, **kws):
+	def __init__(self, next_move, hidemode=False, **kws):
 		self.board = Board(**kws)
 		self.score = 0
-		self.scores_file = self.SCORES_FILE
-		self.movepicker = ai if ai is not None else Player()
-
-		self.__hidemode = hidemode
-
-		self.loadBestScore()
-
-	def loadBestScore(self):
-		if self.scores_file is None or not os.path.exists(self.scores_file):
-			self.best_score = 0
-			return
-		try:
-			f = open(self.scores_file, 'r')
-			self.best_score = int(f.readline(), 10)
-			f.close()
-		except:
-			pass
-
-	def saveBestScore(self):
-		if self.score > self.best_score:
-			self.best_score = self.score
-		try:
-			f = open(self.scores_file, 'w')
-			f.write(str(self.best_score))
-			f.close()
-		except:
-			pass
+		self.next_move = next_move
+		self.hidemode = hidemode
 
 	def incScore(self, pts):
 		self.score += pts
-		if self.score > self.best_score:
-			self.best_score = self.score
 
 	def end(self):
 		return not (self.board.won() or self.board.canMove())
 
 	def readMove(self):
-		return self.movepicker.getMove()
+		return self.next_move()
 
 	def loop(self):
-		try:
-			while True:
-				if not self.__hidemode:
-					os.system(Game.__clear)
-					print(self.__str__(margins={'left': 4, 'top': 4, 'bottom': 4}))
-				if self.board.won() or not self.board.canMove():
-					break
-				m = self.readMove()
-				self.incScore(self.board.move(m))
+		while True:
+			if not self.hidemode:
+				os.system(Game.__clear)
+				print(self.__str__(margins={'left': 4, 'top': 4, 'bottom': 4}))
+			if self.board.won() or not self.board.canMove():
+				break
+			m = self.readMove()
+			self.incScore(self.board.move(m))
 
-		except KeyboardInterrupt:
-			self.saveBestScore()
-			return
-
-		self.saveBestScore()
 		did_win = self.board.won()
-		if not self.__hidemode:
+		if not self.hidemode:
 			print('You won!' if did_win else 'Game Over')
 		return did_win, self.score
 
@@ -124,5 +88,5 @@ class Game(object):
 		b = self.boardToString(margins=margins)
 		top = '\n'*margins.get('top', 0)
 		bottom = '\n'*margins.get('bottom', 0)
-		scores = ' \tScore: %5d  Best: %5d\n' % (self.score, self.best_score)
+		scores = ' \tScore: %5d\n' % self.score
 		return top + b.replace('\n', scores, 1) + bottom

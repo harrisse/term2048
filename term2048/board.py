@@ -1,23 +1,19 @@
 import random
 
-try:
-	xrange
-except NameError:
-	xrange = range
+UP, DOWN, LEFT, RIGHT = 1, 2, 3, 4
 
 class Board(object):
-	UP, DOWN, LEFT, RIGHT = 1, 2, 3, 4
 	HORIZONTAL, VERTICAL = 0, 1
 
-	GOAL = 2048
+	GOAL = 11
 	SIZE = 4
 
 	def __init__(self, goal=GOAL, size=SIZE, **kws):
 		self.__size = size
-		self.__size_range = xrange(0, self.__size)
+		self.__size_range = range(self.__size)
 		self.__goal = goal
 		self.__won = False
-		self.cells = [[0]*self.__size for _ in xrange(self.__size)]
+		self.cells = [[0]*self.__size for _ in range(self.__size)]
 		self.addTile()
 		self.addTile()
 
@@ -46,7 +42,7 @@ class Board(object):
 	def filled(self):
 		return len(self.getEmptyCells()) == 0
 
-	def addTile(self, value=None, choices=([2]*9+[4])):
+	def addTile(self, value=None, choices=([1]*9+[2])):
 		if value:
 			choices = [value]
 
@@ -72,7 +68,7 @@ class Board(object):
 		self.cells[y] = l[:]
 
 	def setCol(self, x, l):
-		for i in xrange(0, self.__size):
+		for i in range(self.__size):
 			self.setCell(x, i, l[i])
 
 	def getEmptyCells(self):
@@ -81,38 +77,38 @@ class Board(object):
 				for y in self.__size_range if self.getCell(x, y) == 0]
 
 	def __collapseLineOrCol(self, line, d):
-		if (d == Board.LEFT or d == Board.UP):
+		if (d == LEFT or d == UP):
 			inc = 1
-			rg = xrange(0, self.__size-1, inc)
+			rg = range(self.__size-1, inc)
 		else:
 			inc = -1
-			rg = xrange(self.__size-1, 0, inc)
+			rg = range(self.__size-1, 0, inc)
 
 		pts = 0
 		for i in rg:
 			if line[i] == 0:
 				continue
 			if line[i] == line[i+inc]:
-				v = line[i]*2
+				v = line[i]+1
 				if v == self.__goal:
 					self.__won = True
 
 				line[i] = v
 				line[i+inc] = 0
-				pts += v
+				pts += 2 ** v
 
 		return (line, pts)
 
 	def __moveLineOrCol(self, line, d):
 		nl = [c for c in line if c != 0]
-		if d == Board.UP or d == Board.LEFT:
+		if d == UP or d == LEFT:
 			return nl + [0] * (self.__size - len(nl))
 		return [0] * (self.__size - len(nl)) + nl
 
 	def fake_move(self, d):
-		if d == Board.LEFT or d == Board.RIGHT:
+		if d == LEFT or d == RIGHT:
 			get, chunk = self.getLine, self.HORIZONTAL
-		elif d == Board.UP or d == Board.DOWN:
+		elif d == UP or d == DOWN:
 			get, chunk = self.getCol, self.VERTICAL
 
 		new_cells = []
@@ -129,9 +125,9 @@ class Board(object):
 		return [cells[x :: self.__size] for x in range(self.__size)] if direction == self.VERTICAL else [cells[x * self.__size : (x + 1) * self.__size] for x in range(self.__size)]
 
 	def move(self, d):
-		if d == Board.LEFT or d == Board.RIGHT:
+		if d == LEFT or d == RIGHT:
 			chg, get = self.setLine, self.getLine
-		elif d == Board.UP or d == Board.DOWN:
+		elif d == UP or d == DOWN:
 			chg, get = self.setCol, self.getCol
 		else:
 			return 0
