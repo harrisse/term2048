@@ -13,9 +13,8 @@ DIRS = KEYS.values()
 class AI:
 	def player(self, board):
 		while True:
-			if kbhit():
-				if ord(getch()) == 224:
-					return KEYS[ord(getch())]
+			if kbhit() and ord(getch()) == 224:
+				return KEYS[ord(getch())]
 
 	def lookahead(self, board, heuristic, depth=0):
 		scores = {direction: heuristic(self.mock_move(direction), depth - 1) for direction in DIRS}
@@ -35,7 +34,7 @@ class AI:
 		for i in range(1, iterations):
 			game = Game(self.get_move, **kws)
 			self.board = game.board
-			won, score = game.loop()
+			won, score = game.play()
 			total_score += score
 			total_won += won
 

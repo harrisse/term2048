@@ -1,4 +1,4 @@
-from term2048.board import Board
+from term2048.board import Board, SIZE
 
 from os import system
 
@@ -9,24 +9,23 @@ class Game(object):
 		self.next_move = next_move
 		self.hidemode = hidemode
 
-	def loop(self):
+	def play(self):
 		while True:
 			if not self.hidemode:
 				system('cls')
 				print self.__str__()
-			if self.board.won() or not self.board.canMove():
+			if self.board.won or not self.board.can_move():
 				break
-			m = self.next_move()
-			self.score += self.board.move(m)
+			self.score += self.board.move(self.next_move())
 
-		return self.board.won(), self.score
+		return self.board.won, self.score
 
 	def __str__(self):
 		b = self.board
-		rg = range(b.size())
-		s = '\n'.join([' ' * 4 + ' '.join(['%3d' % self.board.getCell(x, y) for x in rg]) for y in rg])
+		rg = range(SIZE)
+		s = '\n'.join([' ' * 4 + ' '.join(['%3d' % self.board.cells[x][y] for x in rg]) for y in rg])
 
-		top = '\n'*4
+		top = '\n' * 4
 		bottom = '\n'*4
 		scores = ' \tScore: %5d\n' % self.score
 		return top + s.replace('\n', scores, 1) + bottom

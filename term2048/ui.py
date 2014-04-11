@@ -1,5 +1,6 @@
-from argparse import ArgumentParser
 from term2048.ai import AI
+
+from argparse import ArgumentParser
 
 def parse_cli_args():
 	parser = ArgumentParser(description='2048 in your terminal')
