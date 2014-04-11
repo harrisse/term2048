@@ -7,7 +7,6 @@ from random import choice
 from os import system
 from time import sleep, time
 
-
 KEYS = {72: UP, 80: DOWN, 75: LEFT, 77: RIGHT}
 DIRS = KEYS.values()
 

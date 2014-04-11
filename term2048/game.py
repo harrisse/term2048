@@ -1,28 +1,25 @@
-from __future__ import print_function
-
-import os
-import os.path
-import math
-
-from colorama import init, Fore, Style
-init(autoreset=True)
-
 from term2048.board import Board
+
+from colorama import Fore, Style, init
+from math import log
+from os import system
+
+init(autoreset=True)
 
 class Game(object):
 	__clear = 'cls'
 
 	COLORS = {
-		1:  Fore.GREEN,
-		2:  Fore.BLUE,
-		3:  Fore.CYAN,
-		4:  Fore.RED,
-		5:  Fore.MAGENTA,
-		6:  Fore.CYAN,
-		7:  Fore.BLUE,
-		8:  Fore.MAGENTA,
-		9:  Fore.GREEN,
-		10: Fore.RED,
+		1:  Fore.CYAN,
+		2:  Fore.GREEN,
+		3:  Fore.BLUE,
+		4:  Fore.MAGENTA,
+		5:  Fore.YELLOW,
+		6:  Fore.RED,
+		7:  Fore.CYAN,
+		8:  Fore.GREEN,
+		9:  Fore.BLUE,
+		10: Fore.MAGENTA,
 		11: Fore.YELLOW,
 		12: Fore.RED,
 		13: Fore.CYAN,
@@ -46,8 +43,8 @@ class Game(object):
 	def loop(self):
 		while True:
 			if not self.hidemode:
-				os.system(Game.__clear)
-				print(self.__str__(margins={'left': 4, 'top': 4, 'bottom': 4}))
+				system(Game.__clear)
+				print self.__str__(margins={'left': 4, 'top': 4, 'bottom': 4})
 			if self.board.won() or not self.board.canMove():
 				break
 			m = self.readMove()
@@ -55,24 +52,17 @@ class Game(object):
 
 		did_win = self.board.won()
 		if not self.hidemode:
-			print('You won!' if did_win else 'Game Over')
+			print 'You won!' if did_win else 'Game Over'
 		return did_win, self.score
 
 	def getCellStr(self, x, y):
 		c = self.board.getCell(x, y)
 
 		az = {}
-		for i in range(1, int(math.log(self.board.goal(), 2))):
+		for i in range(1, int(log(self.board.goal(), 2))):
 			az[2 ** i] = chr(i + 96)
 
-		if c == 0:
-			return '  .'
-		elif c == 1024:
-			s = ' 1k'
-		elif c == 2048:
-			s = ' 2k'
-		else:
-			s = '%3d' % c
+		s = '%3d' % c
 
 		return self.COLORS.get(c, Fore.RESET) + s + Style.RESET_ALL
 
