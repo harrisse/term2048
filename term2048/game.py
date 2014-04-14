@@ -23,7 +23,7 @@ class Game(object):
 	def __str__(self):
 		b = self.board
 		rg = range(SIZE)
-		s = '\n'.join([' ' * 4 + ' '.join(['%3d' % self.board.cells[x][y] for x in rg]) for y in rg])
+		s = '\n'.join(' '.join(str(cell) for cell in row) for row in self.board.cells)
 
 		top = '\n' * 4
 		bottom = '\n'*4

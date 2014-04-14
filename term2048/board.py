@@ -1,5 +1,5 @@
-from numpy import zeros, array, nonzero, transpose, diff, where, delete
-from random import choice
+from numpy import zeros, array, nonzero, transpose, diff, where, delete, int16, array_equal, copy, pad
+from random import choice, random
 
 UP, DOWN, LEFT, RIGHT = 1, 2, 3, 4
 GOAL = 11
@@ -7,45 +7,61 @@ SIZE = 4
 
 HORIZONTAL, VERTICAL = 0, 1
 
+def collapse(board, d):
+	has_changed = False
+
+	for i in range(SIZE):
+		row = board[i] if d == UP or d == DOWN else board[:, i]
+		new_row = zeros(SIZE)
+		new_vals = row[row.nonzero()]
+
+		if len(new_vals) > 0:
+			if (d == UP or d == LEFT):
+				new_row[:len(new_vals)] = new_vals
+			else:
+				new_row[-len(new_vals):] = new_vals
+
+		if not has_changed and not array_equal(row, new_row):
+			has_changed = True
+
+		if d == UP or d == DOWN:
+			board[i] = new_row
+		else:
+			board[:, i] = new_row
+
+	return has_changed
+
 class Board(object):
 	def __init__(self, **kws):
 		self.won = False
-		self.cells = zeros((SIZE, SIZE))
+		self.cells = zeros((SIZE, SIZE), dtype=int16)
 		self.add_tile()
 		self.add_tile()
 
 	def can_move(self):
-		return not self.filled() or (diff(self.cells) == 0).any() or (diff(self.cells, axis=0) == 0).any()
-
-	def filled(self):
-		return self.get_empty_cells().size == 0
+		return (self.cells == 0).any() or (diff(self.cells) == 0).any() or (diff(self.cells, axis=0) == 0).any()
 
 	def add_tile(self):
-		v = choice([1]*9+[2])
-		empty = self.get_empty_cells()
+		empty_cells = self.cells == 0
 
-		if empty.size != 0:
-			x, y = choice(empty)
-			self.cells[x][y] = v
+		if empty_cells.any():
+			x, y = choice(transpose(empty_cells.nonzero()))
+			self.cells[x][y] = 1 if random() < .9 else 2
 
-	def getLine(self, y):
-		return [self.cells[x][y] for x in range(SIZE)]
+	def get_col(self, x):
+		return copy(self.cells[x])
 
-	def getCol(self, x):
-		return [self.cells[x][y] for y in range(SIZE)]
+	def get_row(self, x):
+		return copy(self.cells[:, x])
 
-	def setLine(self, y, l):
-		for x in range(SIZE):
-			self.cells[x][y] = l[x]
+	def set_row(self, x, l):
+		self.cells[:, x] = l
 
-	def setCol(self, x, l):
-		for y in range(SIZE):
-			self.cells[x][y] = l[y]
-
-	def get_empty_cells(self):
-		return transpose((self.cells == 0).nonzero())
+	def set_col(self, y, l):
+		self.cells[y] = l
 
 	def __collapseLineOrCol(self, line, d):
+		line = copy(line)
 		if (d == LEFT or d == UP):
 			inc = 1
 			rg = range(0, SIZE - 1, inc)
@@ -76,9 +92,9 @@ class Board(object):
 
 	def fake_move(self, d):
 		if d == LEFT or d == RIGHT:
-			get, chunk = self.getLine, HORIZONTAL
+			get, chunk = self.get_row, HORIZONTAL
 		elif d == UP or d == DOWN:
-			get, chunk = self.getCol, VERTICAL
+			get, chunk = self.get_col, VERTICAL
 
 		new_cells = []
 		for i in range(SIZE):
@@ -95,26 +111,25 @@ class Board(object):
 
 	def move(self, d):
 		if d == LEFT or d == RIGHT:
-			chg, get = self.setLine, self.getLine
+			chg, get = self.set_row, self.get_row
 		elif d == UP or d == DOWN:
-			chg, get = self.setCol, self.getCol
+			chg, get = self.set_col, self.get_col
 		else:
 			return 0
 
-		moved = False
 		score = 0
 
+		moved = collapse(self.cells, d)
 		for i in range(SIZE):
 			origin = get(i)
-			line = self.__moveLineOrCol(origin, d)
-			collapsed, pts = self.__collapseLineOrCol(line, d)
-			new = self.__moveLineOrCol(collapsed, d)
+			new, pts = self.__collapseLineOrCol(origin, d)
 			chg(i, new)
-			if (array(origin) != array(new)).any():
+			if (not array_equal(origin, new)):
 				moved = True
 			score += pts
+		moved2 = collapse(self.cells, d)
 
-		if moved:
+		if moved or moved2:
 			self.add_tile()
 
 		return score
